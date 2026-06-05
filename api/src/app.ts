@@ -9,6 +9,8 @@ import authRoutes from './routes/auth.routes';
 import sedeRoutes from './routes/sede.routes';
 import estudianteRoutes from './routes/estudiante.routes';
 import statsRoutes from './routes/stats.routes';
+import swaggerUi from 'swagger-ui-express';
+import openApiDocument from './swagger/openapi.json';
 
 const app = express();
 
@@ -29,6 +31,7 @@ app.get('/health', (_req, res) => {
 });
 
 //endpoints
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
 app.use('/api/auth', authRoutes);
 app.use('/api/sedes', sedeRoutes);
 app.use('/api/estudiantes', estudianteRoutes);
