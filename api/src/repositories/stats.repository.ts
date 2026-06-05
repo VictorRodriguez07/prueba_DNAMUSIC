@@ -1,11 +1,12 @@
 import { prisma } from '../prisma/prisma.client';
 
 export const statsRepository = {
-    totalPorSede: () => {
+    totalPorSede: (sedeId?: string) => {
         return prisma.estudiante.groupBy({
             by: ['sedeId'],
             where: {
                 deletedAt: null,
+                ...(sedeId && { sedeId }),
             },
             _count: {
                 id: true,
@@ -13,11 +14,12 @@ export const statsRepository = {
         });
     },
 
-    totalPorEstado: () => {
+    totalPorEstado: (sedeId?: string) => {
         return prisma.estudiante.groupBy({
             by: ['estado'],
             where: {
                 deletedAt: null,
+                ...(sedeId && { sedeId }),
             },
             _count: {
                 id: true,
@@ -25,12 +27,13 @@ export const statsRepository = {
         });
     },
 
-    sedeConMasActivos: () => {
+    sedeConMasActivos: (sedeId?: string) => {
         return prisma.estudiante.groupBy({
             by: ['sedeId'],
             where: {
                 deletedAt: null,
                 estado: 'ACTIVO',
+                ...(sedeId && { sedeId }),
             },
             _count: {
                 id: true,
