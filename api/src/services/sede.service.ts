@@ -9,7 +9,7 @@ export const sedeService = {
         //y el total de sedes.
         const [data, total] = await sedeRepository.findAll(filters);
 
-        //retorna las sedes y la metadata para las siguientes paginaciones:
+        //Se retorna las sedes y la metadata para las siguientes paginaciones:
         //total de sedes, página actual, límite, y al final calcula el número total de paginas.
         return {
             data,

@@ -7,6 +7,8 @@ import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/notFoundHandler';
 import authRoutes from './routes/auth.routes';
 import sedeRoutes from './routes/sede.routes';
+import estudianteRoutes from './routes/estudiante.routes';
+import statsRoutes from './routes/stats.routes';
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.get('/health', (_req, res) => {
 //endpoints
 app.use('/api/auth', authRoutes);
 app.use('/api/sedes', sedeRoutes);
+app.use('/api/estudiantes', estudianteRoutes);
+app.use('/api/stats', statsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
