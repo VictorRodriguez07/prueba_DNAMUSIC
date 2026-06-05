@@ -129,7 +129,6 @@ Un OPERADOR pertenece a una sede. Solo puede ver y gestionar los estudiantes de 
 - Agregar tests de integración para los endpoints de auth y estudiantes. Son los más críticos y los que más valor dan.
 - Implementar el bloqueo por intentos fallidos usando los campos que ya están en el schema.
 - Docker Compose para que el proyecto corra con un solo comando sin necesidad de configurar PostgreSQL localmente.
-- Paginación en el frontend — el backend ya la soporta pero el frontend no la usa todavía.
 
 ---
 
