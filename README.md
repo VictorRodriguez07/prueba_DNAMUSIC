@@ -85,15 +85,15 @@ Un OPERADOR pertenece a una sede. Solo puede ver y gestionar los estudiantes de 
 
 ## Decisiones técnicas
 
-**Express sobre NestJS o Fastify** — para una prueba técnica de este alcance y teniendo en cuenta tiempos de entrega, NestJS agrega demasiado boilerplate, tiempo de setup o estructura incial y desarrollo. Express es más directo, rápido de configurar y permite cumplir con el alcance y requerimientos del proyecto.
+**Express sobre NestJS o Fastify**: Para el alcance de esta prueba prioricé velocidad de desarrollo y simplicidad. Express permite implementar la arquitectura requerida sin agregar capas adicionales de abstracción. En proyectos más grandes o con equipos numerosos consideraría NestJS por su estructura y convenciones.
 
-**Arquitectura por capas** — la request pasa por `Route → Controller → Service → Repository → Prisma`. Los controller solo manejan HTTP y coordinar el flujo de llamado a función de service y validación con Zod. El service tiene la lógica de negocio y no conoce Express. El repository es la única capa que toca Prisma y genera las transaciones con la base de datos. Esta separación hace que cada capa sea fácil de testear, mantener y escalar.
+**Arquitectura por capas**: Se separó la aplicación en Route / Controller / Service / Repository / Prisma. Los controllers reciben y validan las peticiones HTTP, los services contienen la lógica de negocio y los repositories encapsulan el acceso a datos. Esta separación facilita el mantenimiento, las pruebas y la evolución del proyecto.
 
-**Prisma con PostgreSQL (Neon)** — Neon ofrece PostgreSQL serverless gratuito con buena latencia. Prisma genera los tipos automáticamente desde el schema, lo que elimina una categoría entera de bugs.
+**Prisma con PostgreSQL (Neon)**: Neon ofrece PostgreSQL serverless con una capa gratuita suficiente para este tipo de proyecto. Prisma genera tipos a partir del schema y mejora la experiencia de desarrollo al reducir errores relacionados con consultas y tipado.
 
-**Zod para validación** — valida todos los inputs antes de que lleguen al service. Si el payload no cumple el schema, devuelve un error 400 descriptivo sin que el código de negocio tenga que preocuparse por eso.
+**Zod para validación**: Valida los datos de entrada antes de que lleguen a la lógica de negocio. Si el payload no cumple el schema definido, la API responde con un error 400 descriptivo.
 
-**Singleton de PrismaClient** — en desarrollo, Next.js y ts-node recargan módulos en cada cambio. Sin el patrón de singleton con `globalThis`, cada recarga crea una nueva conexión y se agotan rápido. El singleton reutiliza la instancia existente.
+**Singleton de PrismaClient**: Durante el desarrollo, herramientas como ts-node pueden recargar módulos varias veces. Mantener una única instancia de PrismaClient evita crear conexiones innecesarias y reduce el riesgo de agotar el pool de conexiones.
 
 ---
 
@@ -101,23 +101,23 @@ Un OPERADOR pertenece a una sede. Solo puede ver y gestionar los estudiantes de 
 
 **Lo que se implementó:**
 
-- **bcrypt con 12 salt rounds** — 10 es el mínimo aceptable, sin embargo 12 es el estándar actual. A más rounds, más tiempo de cómputo por intento de fuerza bruta.
-- **Mensajes genéricos en login** — siempre devuelve "Credenciales inválidas", nunca dice si el email existe o no. Un atacante no puede enumerar usuarios.
-- **Timing attack mitigation** — aunque el usuario no exista, el sistema igual ejecuta `bcrypt.compare` contra un hash falso y añade un delay mínimo de 300ms. Esto evita que un atacante infiera si un email está registrado midiendo tiempos de respuesta.
-- **Rate limiting en auth** — 10 intentos por IP cada 15 minutos en los endpoints de login y registro. Después del límite, devuelve 429. Esto se implementó con la ayuda de la librería express-rate-limit, con el método rateLimit.
-- **Rate limiting global** — 200 requests por IP cada 15 minutos en toda la API.
-- **Helmet** — configura headers HTTP de seguridad automáticamente (X-Frame-Options, X-Content-Type-Options, etc.).
-- **CORS restringido** — solo acepta requests del origen configurado en `ALLOWED_ORIGINS`. En producción apunta únicamente al frontend en Vercel.
-- **Payload limit** — requests con body mayor a 100kb son rechazados automáticamente.
-- **JWT con expiración** — los tokens expiran en 8 horas. Configurable por variable de entorno.
-- **Autorización por rol y por sede** — el middleware `authorize` verifica el rol. La lógica de sede se aplica en el service: si el usuario es OPERADOR, su `sedeId` se toma del token, no del body. No puede manipularlo.
-- **Soft delete** — los estudiantes no se eliminan físicamente. Se marca `deletedAt` y se excluyen de todas las queries con `where: { deletedAt: null }`.
-- **Password nunca se devuelve** — en ninguna respuesta de la API aparece el hash de la contraseña.
+- **bcrypt con 12 salt rounds**: Se configuró un costo de 12 rondas para equilibrar seguridad y rendimiento durante el proceso de autenticación.
+- **Mensajes genéricos en login**: Siempre devuelve "Credenciales inválidas", nunca dice si el email existe o no. Un atacante no puede enumerar usuarios.
+- **Timing attack mitigation**: Aunque el usuario no exista, el sistema igual ejecuta `bcrypt.compare` contra un hash falso y añade un delay mínimo de 300ms. Esto evita que un atacante infiera si un email está registrado midiendo tiempos de respuesta.
+- **Rate limiting en auth**: 10 intentos por IP cada 15 minutos en los endpoints de login y registro. Después del límite, devuelve 429. Esto se implementó con la ayuda de la librería express-rate-limit, con el método rateLimit.
+- **Rate limiting global**: 200 requests por IP cada 15 minutos en toda la API.
+- **Helmet**: Configura headers HTTP de seguridad automáticamente (X-Frame-Options, X-Content-Type-Options, etc.).
+- **CORS restringido**: Solo acepta requests del origen configurado en `ALLOWED_ORIGINS`. En producción apunta únicamente al frontend en Vercel.
+- **Payload limit**: requests con body mayor a 100kb son rechazados automáticamente.
+- **JWT con expiración**: los tokens expiran en 8 horas. Configurable por variable de entorno.
+- **Autorización por rol y por sede**: el middleware `authorize` verifica el rol. La lógica de sede se aplica en el service: si el usuario es OPERADOR, su `sedeId` se toma del token, no del body. No puede manipularlo.
+- **Soft delete**: los estudiantes no se eliminan físicamente. Se marca `deletedAt` y se excluyen de todas las queries con `where: { deletedAt: null }`.
+- **Password nunca se devuelve**: en ninguna respuesta de la API aparece el hash de la contraseña.
 
 **Lo que conozco y no implementé por tiempo:**
 
-- **Refresh tokens** — el flujo actual usa solo access token. Con más tiempo implementaría refresh tokens con rotación, almacenados en cookies httpOnly para evitar acceso desde JavaScript.
-- **Cookies httpOnly** — actualmente el token se guarda en localStorage en el frontend. Es funcional pero vulnerable a XSS. La alternativa correcta es httpOnly cookie, que el navegador no expone a JavaScript.
+- **Refresh tokens**: El flujo actual usa solo access token. Con más tiempo implementaría refresh tokens con rotación, almacenados en cookies httpOnly para evitar acceso desde JavaScript.
+- **Cookies httpOnly**: Actualmente el token se guarda en localStorage en el frontend. Es funcional pero vulnerable a XSS. La alternativa correcta es httpOnly cookie, que el navegador no expone a JavaScript.
 - **Bloqueo por intentos a nivel de cuenta** — el schema de User ya tiene los campos `loginAttempts` y `blockedUntil` preparados. No alcancé a implementar la lógica que los actualiza en cada intento fallido.
 - **Refresh de sesión automático** — si el token expira mientras el usuario está activo, la app lo redirige al login sin previo aviso. Con refresh tokens esto se resolvería transparentemente.
 
@@ -127,7 +127,6 @@ Un OPERADOR pertenece a una sede. Solo puede ver y gestionar los estudiantes de 
 
 - Implementar refresh tokens con cookies httpOnly — es el cambio de seguridad más importante que quedó fuera.
 - Agregar tests de integración para los endpoints de auth y estudiantes. Son los más críticos y los que más valor dan.
-- Documentar la API con Swagger — es útil tanto para el equipo como para la entrevista.
 - Implementar el bloqueo por intentos fallidos usando los campos que ya están en el schema.
 - Docker Compose para que el proyecto corra con un solo comando sin necesidad de configurar PostgreSQL localmente.
 - Paginación en el frontend — el backend ya la soporta pero el frontend no la usa todavía.
