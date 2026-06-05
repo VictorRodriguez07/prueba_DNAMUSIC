@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service';
 import { registerSchema, loginSchema } from '../validations/auth.schema';
 
-//controller que coordina el registro, login y perfil del usuario.
+//Controller que coordina el registro, login y perfil del usuario.
 //Llama al schema para validar los datos enviados por medio de zod
 //y luego llama al service con su función correspondiente, guardando el resultado en res.
 export const authController = {
